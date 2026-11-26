@@ -1,0 +1,24 @@
+version: 2
+
+sources:
+  - name: nba_players
+    description: Player data (the players schema)
+    schema: players
+    tables:
+      - name: player_game_logs
+        description: One row per player per game
+        columns:
+          - name: player_id
+            description: League player id
+          - name: game_id
+            description: League game id
+          - name: game_date
+            description: Date of the game
+          - name: points
+            description: Points scored
+          - name: rebounds
+            description: Total rebounds
+          - name: assists
+            description: Assists
+          - name: minutes_played
+            description: Minutes played

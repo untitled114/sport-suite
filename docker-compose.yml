@@ -1,0 +1,44 @@
+# A local database for this repository: PostgreSQL 16 with TimescaleDB, built from the schema
+# files in docker/sportsuite_db/ and mlb/db/ (loaded in name order on first start).
+#
+#   DB_PASSWORD=choose-one docker compose up -d --wait
+#   DB_PASSWORD=choose-one DB_USER=postgres python -m pytest tests/unit/test_named_queries_plan.py -q
+#
+# The second command has the database plan every named query, so a query that names a missing
+# table or column fails. The data directory is a named volume; "docker compose down -v" removes it.
+services:
+  db:
+    image: timescale/timescaledb:2.25.2-pg16
+    environment:
+      POSTGRES_DB: sportsuite
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    ports:
+      # loopback only: a published port is reachable from the network otherwise
+      - "127.0.0.1:${DB_PORT:-5500}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker/sportsuite_db/01_init.sql:/docker-entrypoint-initdb.d/101_init.sql:ro
+      - ./docker/sportsuite_db/02_schemas.sql:/docker-entrypoint-initdb.d/102_schemas.sql:ro
+      - ./docker/sportsuite_db/03_players.sql:/docker-entrypoint-initdb.d/103_players.sql:ro
+      - ./docker/sportsuite_db/04_games.sql:/docker-entrypoint-initdb.d/104_games.sql:ro
+      - ./docker/sportsuite_db/05_teams.sql:/docker-entrypoint-initdb.d/105_teams.sql:ro
+      - ./docker/sportsuite_db/06_intelligence.sql:/docker-entrypoint-initdb.d/106_intelligence.sql:ro
+      - ./docker/sportsuite_db/08_features.sql:/docker-entrypoint-initdb.d/108_features.sql:ro
+      - ./mlb/db/schema.sql:/docker-entrypoint-initdb.d/201_mlb_schema.sql:ro
+      - ./mlb/db/schema_volume.sql:/docker-entrypoint-initdb.d/202_mlb_volume.sql:ro
+      - ./mlb/db/schema_sabermetric.sql:/docker-entrypoint-initdb.d/203_mlb_sabermetric.sql:ro
+      - ./mlb/db/schema_xbh.sql:/docker-entrypoint-initdb.d/204_mlb_xbh.sql:ro
+      - ./mlb/db/schema_pitchmix.sql:/docker-entrypoint-initdb.d/205_mlb_pitchmix.sql:ro
+      - ./mlb/db/schema_parkfactors.sql:/docker-entrypoint-initdb.d/206_mlb_parkfactors.sql:ro
+      - ./mlb/db/schema_expected_pa.sql:/docker-entrypoint-initdb.d/207_mlb_expected_pa.sql:ro
+    healthcheck:
+      # over TCP: the temporary server that loads the schema files listens on the socket only,
+      # so the check passes once the real server is up with every file loaded
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${DB_USER:-postgres} -d sportsuite"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  db_data:

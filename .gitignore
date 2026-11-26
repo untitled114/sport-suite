@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+*.log
+mlruns/
+mlruns.db
+target/
+dbt_packages/
+.terraform/
+*.tfstate*

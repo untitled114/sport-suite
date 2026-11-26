@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_player_game_logs
+    description: One row per player per game played, with cleaned fields and derived metrics
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - player_id
+            - game_id
+    columns:
+      - name: player_id
+        description: League player id
+        tests:
+          - not_null
+      - name: game_id
+        description: League game id
+        tests:
+          - not_null
+      - name: game_date
+        description: Date of the game
+        tests:
+          - not_null
+      - name: minutes
+        description: Minutes played (games without minutes are excluded)
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: fg_pct
+        description: Field goal percentage (0 to 1)
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              inclusive: true
+
+  - name: int_rolling_stats
+    description: Rolling averages over the last 3, 5, 10 and 20 games per player
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - player_id
+            - game_id
+    columns:
+      - name: player_id
+        tests:
+          - not_null
+      - name: avg_points_l3
+        description: Average points over the previous 3 games
+      - name: games_played_prior
+        description: Games the player had played before this one
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 5
+              inclusive: true
